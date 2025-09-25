@@ -6,10 +6,10 @@
 
 | Label Title             | When to use it                                                               |
 | ----------------------- | ---------------------------------------------------------------------------- |
-| Formatting Drift        | When `npm run format:check` fails or Prettier shows diffs in CI.             |
-| Formatting Synchronized | When CI auto-formats files (Prettier write) and pushes/notes the change.     |
-| Diagnostics Failing     | When ESLint or TypeScript jobs fail in CI.                                   |
-| Lint Stable             | When all ESLint checks pass in CI.                                           |
+| Formatting Drift        | When Biome reports formatting differences during `pnpm run lint` or in CI.   |
+| Formatting Synchronized | When CI auto-formats files with Biome and pushes/notes the change.           |
+| Diagnostics Failing     | When Biome lint or TypeScript jobs fail in CI.                               |
+| Lint Stable             | When all Biome lint checks pass in CI.                                       |
 | Types Stable            | When the TypeScript type-check job passes in CI.                             |
 | Test Failure            | When any test job fails in CI.                                               |
 | Test Stable             | When all test jobs pass in CI.                                               |
