@@ -16,6 +16,7 @@ description: 'Apply to imports, file layout, and code readability.'
 ## Readability
 
 -   Use newline separation between logical code blocks for readability (DX)
+-   Prefer descriptive variable and property names; avoid abstract names like `c` or `v`.
 
 ## State Management (Zustand)
 
