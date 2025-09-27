@@ -1,0 +1,144 @@
+name: Deploy Preview
+on:
+    workflow_run:
+        workflows: ['Main PR Workflow']
+        types: [completed]
+concurrency:
+    group: deploy-preview-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+    cancel-in-progress: true
+
+jobs:
+    check:
+        if: |
+            github.event.workflow_run.conclusion == 'success' &&
+            github.event.workflow_run.event == 'pull_request' &&
+            github.event.workflow_run.head_repository.full_name == github.repository
+        runs-on: ubuntu-latest
+        outputs:
+            pr: ${{ steps.pr.outputs.number }}
+            base: ${{ steps.base.outputs.base }}
+        steps:
+            - id: pr
+              uses: jwalton/gh-find-current-pr@89ee5799558265a1e0e31fab792ebb4ee91c016b # v1.3.3
+              with:
+                  sha: ${{ github.event.workflow_run.head_sha }}
+            - id: base
+              if: steps.pr.outputs.number
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  PR_NUMBER: ${{ steps.pr.outputs.number }}
+              run: echo "base=$(gh pr view "$PR_NUMBER" --json baseRefName --jq .baseRefName)" >> $GITHUB_OUTPUT
+
+    deploy:
+        needs: check
+        if: ${{ needs.check.outputs.pr && contains(fromJSON('["preview","main"]'), needs.check.outputs.base) }}
+        runs-on: ubuntu-latest
+        environment: deploy
+        permissions:
+            contents: read
+            pull-requests: write
+        defaults:
+            run:
+                working-directory: Project
+
+        steps:
+            - name: Download PR source artifact
+              uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+              with:
+                  name: pr-source
+                  github-token: ${{ github.token }}
+                  run-id: ${{ github.event.workflow_run.id }}
+
+            - name: Extract source artifact (creates ./Project)
+              run: tar -xzf pr-source.tgz
+              working-directory: .
+
+            - name: Setup Node
+              uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+              with:
+                  node-version-file: Project/.node-version
+                  cache: pnpm
+                  cache-dependency-path: Project/pnpm-lock.yaml
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Install Vercel CLI
+              run: pnpm add -g vercel@latest
+
+            - name: Pull Vercel environment variables
+              env:
+                  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+                  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+                  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+              run: vercel pull --yes --environment=preview --token=$VERCEL_TOKEN
+
+            - name: Build with Vercel
+              env:
+                  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+                  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+                  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+              run: vercel build --token=$VERCEL_TOKEN
+
+            - name: Deploy to Vercel
+              id: deploy
+              env:
+                  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+                  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+                  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+              run: |
+                  deployment_url=$(vercel deploy --prebuilt --token=$VERCEL_TOKEN)
+                  echo "url=$deployment_url" >> $GITHUB_OUTPUT
+                  echo "✅ Deployment successful: $deployment_url"
+
+            # Success Labels & Comment
+            - if: needs.check.outputs.pr && steps.deploy.outputs.url
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  PR_NUMBER: ${{ needs.check.outputs.pr }}
+              run: |
+                  gh pr edit "$PR_NUMBER" --remove-label "Staging Malfunction"
+                  gh pr edit "$PR_NUMBER" --add-label "Staging Deployed"
+
+            - if: needs.check.outputs.pr && steps.deploy.outputs.url
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  PR_NUMBER: ${{ needs.check.outputs.pr }}
+                  COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+                  REPO_NAME: ${{ github.event.workflow_run.head_repository.full_name }}
+                  DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+                  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+                  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+              run: |
+                  short_sha="${COMMIT_SHA:0:7}"
+                  dashboard_url="https://vercel.com/$VERCEL_ORG_ID/$VERCEL_PROJECT_ID"
+
+                  cat << EOF > comment.md
+                  ## 🚀 Staging Deployment Complete
+
+                  **Mission Control Report:**
+                  - **Repository:** \`$REPO_NAME\`
+                  - **Commit:** \`$short_sha\`
+                  - **Target Environment:** Preview Staging
+
+                  **Navigation Links:**
+                  - 🌐 **[Launch Preview]($DEPLOY_URL)**
+                  - 📊 **[Mission Dashboard]($dashboard_url)**
+
+                  ---
+                  *Powered by NeonSpace Mission Control* ⭐
+                  EOF
+
+                  gh pr comment "$PR_NUMBER" --body-file comment.md
+
+            # Failure Labels
+            - if: failure() && needs.check.outputs.pr
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  PR_NUMBER: ${{ needs.check.outputs.pr }}
+              run: |
+                  gh pr edit "$PR_NUMBER" --remove-label "Staging Deployed"
+                  gh pr edit "$PR_NUMBER" --add-label "Staging Malfunction"

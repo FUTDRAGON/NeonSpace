@@ -1,0 +1,172 @@
+name: Main PR Workflow
+on:
+    pull_request:
+
+concurrency:
+    group: pr-policy-${{ github.event.pull_request.number }}
+    cancel-in-progress: true
+
+jobs:
+    branch_policy:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Enforce PR source/target
+              shell: bash
+              env:
+                  BASE_REF: ${{ github.base_ref }}
+                  HEAD_REF: ${{ github.head_ref }}
+              run: |
+                  set -euo pipefail
+
+                  base="$BASE_REF"
+                  head="$HEAD_REF"
+
+                  if [[ "$base" != 'preview' && "$base" != 'main' ]]; then
+                    echo "Non-preview/main target → allow"
+                    exit 0
+                  fi
+
+                  if [[ "$base" == 'preview' && "$head" != 'dev' ]]; then
+                    echo 'Only dev -> preview is allowed'
+                    exit 1
+                  fi
+
+                  if [[ "$base" == 'main' && "$head" != 'preview' ]]; then
+                    echo 'Only preview -> main is allowed'
+                    exit 1
+                  fi
+
+                  echo "Allowed: $head -> $base"
+
+    ci:
+        needs: branch_policy
+        if: contains(fromJSON('["preview","main"]'), github.base_ref)
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+            pull-requests: write
+        defaults:
+            run:
+                working-directory: Project
+        steps:
+            - name: Checkout PR head
+              uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+              with:
+                  fetch-depth: 0
+
+            - name: Setup Node
+              uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+              with:
+                  node-version-file: Project/.node-version
+                  cache: pnpm
+                  cache-dependency-path: Project/pnpm-lock.yaml
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
+
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
+
+            - id: ts_check
+              name: TypeScript check
+              continue-on-error: true
+              run: pnpm tsc:check
+
+            # TypeScript Status Labels
+            - if: steps.ts_check.conclusion == 'failure' && github.event.pull_request.number
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+              run: |
+                  gh pr edit "$PR_NUMBER" --remove-label "Types Stable"
+                  gh pr edit "$PR_NUMBER" --add-label "Type System Offline"
+
+            - if: steps.ts_check.conclusion == 'failure'
+              run: exit 1
+
+            - if: steps.ts_check.conclusion == 'success' && github.event.pull_request.number
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+              run: |
+                  gh pr edit "$PR_NUMBER" --remove-label "Type System Offline"
+                  gh pr edit "$PR_NUMBER" --add-label "Types Stable"
+
+            # Lint Check
+            - id: lint_check
+              name: Biome lint check
+              continue-on-error: true
+              run: pnpm biome:lint:check
+
+            - if: steps.lint_check.conclusion == 'failure' && github.event.pull_request.number
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+              run: gh pr edit "$PR_NUMBER" --add-label "Diagnostics Failing"
+
+            - if: steps.lint_check.conclusion == 'failure'
+              run: exit 1
+
+            # Format Check
+            - id: format_check
+              name: Biome format check
+              continue-on-error: true
+              run: pnpm biome:format:check
+
+            - if: steps.format_check.conclusion == 'failure' && github.event.pull_request.number
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+              run: gh pr edit "$PR_NUMBER" --add-label "Formatting Drift"
+
+            # Auto-fix (if TypeScript passed)
+            - if: steps.ts_check.conclusion == 'success'
+              name: Biome lint & format (write)
+              run: pnpm biome:lint && pnpm biome:format
+
+            # Update Labels After Auto-fix
+            - if: steps.ts_check.conclusion == 'success' && github.event.pull_request.number
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+              run: |
+                  gh pr edit "$PR_NUMBER" --remove-label "Diagnostics Failing"
+                  gh pr edit "$PR_NUMBER" --remove-label "Formatting Drift"
+                  gh pr edit "$PR_NUMBER" --add-label "Lint Stable"
+                  gh pr edit "$PR_NUMBER" --add-label "Formatting Synchronized"
+
+            # Build
+            - id: build_step
+              name: Build
+              continue-on-error: true
+              run: pnpm build
+
+            # Build Status Labels
+            - if: steps.build_step.conclusion == 'failure' && github.event.pull_request.number
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+              run: gh pr edit "$PR_NUMBER" --add-label "Assembly Malfunction"
+
+            - if: steps.build_step.conclusion == 'failure'
+              run: exit 1
+
+            - if: steps.build_step.conclusion == 'success' && github.event.pull_request.number
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+              run: |
+                  gh pr edit "$PR_NUMBER" --remove-label "Assembly Malfunction"
+                  gh pr edit "$PR_NUMBER" --add-label "Assembly Complete"
+
+            # Archive source for deploy (no Vercel build here - no secrets in PR context)
+            - name: Archive project source
+              shell: bash
+              working-directory: .
+              run: tar -czf pr-source.tgz Project
+
+            - name: Upload source artifact
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+              with:
+                  name: pr-source
+                  path: pr-source.tgz

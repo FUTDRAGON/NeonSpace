@@ -1,25 +1,66 @@
 # This document provides an overview for all who contribute to NeonSpace.
 
+## Branch Gate Strategy
+
+NeonSpace uses a three-tier branch gate system to ensure code quality and deployment stability:
+
+### Development Flow
+
+**Work-in-Progress Branches**
+
+-   Any branch outside of the 3 main branches (`dev`, `preview`, `main`) represents work-in-progress, prototypes, and ideas
+-   These branches have no special meaning and are for experimentation and feature development
+
+**dev → preview → main**
+
+1. **dev branch** - Current Development State
+
+    - Collects work-in-progress features from feature branches
+    - Reflects the current active development state
+    - All feature branches should target `dev` for pull requests
+
+2. **preview branch** - Staging Environment
+
+    - Takes everything from `dev` branch that has passed initial checks
+    - Generates preview deployments for testing in a production-like environment
+    - Acts as a staging gate before production
+
+3. **main branch** - Production Ready
+    - Receives stable changes from `preview` branch
+    - Should only contain thoroughly tested, stable code
+    - Triggers production deployment when all checks pass on PR merge
+    - Represents the live/production state
+
+### Deployment Pipeline
+
+-   **dev** → CI checks only
+-   **preview** → CI checks + preview deployment generation
+-   **main** → CI checks + production deployment (on merge)
+
+This ensures progressive stability validation as code moves through the development pipeline.
+
 ## Labels Guide
 
 ### Automation / CI Status
 
-| Label Title             | When to use it                                                               |
-| ----------------------- | ---------------------------------------------------------------------------- |
-| Formatting Drift        | When Biome reports formatting differences during `pnpm run lint` or in CI.   |
-| Formatting Synchronized | When CI auto-formats files with Biome and pushes/notes the change.           |
-| Diagnostics Failing     | When Biome lint or TypeScript jobs fail in CI.                               |
-| Lint Stable             | When all Biome lint checks pass in CI.                                       |
-| Types Stable            | When the TypeScript type-check job passes in CI.                             |
-| Test Failure            | When any test job fails in CI.                                               |
-| Test Stable             | When all test jobs pass in CI.                                               |
-| Build Failure           | When the build job fails in CI.                                              |
-| Build Stable            | When the build job succeeds in CI.                                           |
-| Preview Deployed        | When a preview URL is successfully deployed for this PR.                     |
-| Preview Failed          | When preview deployment for this PR fails.                                   |
-| Automated Dependency PR | On PRs opened by Dependabot (should be applied automatically by automation). |
-| Package Changes         | When package manifests or lockfiles change in the PR.                        |
-| Breaking Change         | When the PR introduces a semver-major or public API breaking change.         |
+| Label Title             | When to use it                                                             |
+| ----------------------- | -------------------------------------------------------------------------- |
+| Formatting Drift        | When Biome reports formatting differences during `pnpm run lint` or in CI. |
+| Formatting Synchronized | When CI auto-formats files with Biome and pushes/notes the change.         |
+| Diagnostics Failing     | When Biome lint jobs fail in CI.                                           |
+| Lint Stable             | When all Biome lint checks pass in CI.                                     |
+| Types Stable            | When the TypeScript type-check job passes in CI.                           |
+| Type System Offline     | When the TypeScript type-check job fails in CI.                            |
+
+| Simulation Failure | When any test job fails in CI. |
+| Simulation Verified | When all test jobs pass in CI. |
+| Assembly Malfunction | When the build job fails in CI. |
+| Assembly Complete | When the build job succeeds in CI. |
+| Staging Deployed | When a preview URL is successfully deployed for this PR. |
+| Staging Malfunction | When preview deployment for this PR fails. |
+| Supply Drop Incoming | On PRs opened by Dependabot (should be applied automatically by automation). |
+| Cargo Manifest Updated | When package manifests or lockfiles change in the PR. |
+| System Overhaul | When the PR introduces a semver-major or public API breaking change. |
 
 ### Issue Types
 
