@@ -2,31 +2,24 @@
 
 <h3 align="center">A personal site for ideas, work, and experiments</h3>
 
-<p align="center">
-  <a href="https://github.com/Neonsy/NeonSpace/issues">
-    <img alt="Issues" src="https://img.shields.io/github/issues/Neonsy/NeonSpace?style=for-the-badge&logo=github&logoColor=fff&labelColor=0B1221&color=471838" />
-  </a>&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://github.com/Neonsy/NeonSpace/pulls">
-    <img alt="Pull Requests" src="https://img.shields.io/github/issues-pr/Neonsy/NeonSpace?style=for-the-badge&logo=github&logoColor=fff&labelColor=0B1221&color=1E40AF&label=PRs" />
-  </a>&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://github.com/Neonsy/NeonSpace/network/members">
-    <img alt="Forks" src="https://img.shields.io/github/forks/Neonsy/NeonSpace?style=for-the-badge&logo=github&logoColor=fff&labelColor=0B1221&color=3D66B8" />
-  </a>&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://github.com/Neonsy/NeonSpace/stargazers">
-    <img alt="Stars" src="https://img.shields.io/github/stars/Neonsy/NeonSpace?style=for-the-badge&logo=github&logoColor=fff&labelColor=0B1221&color=CA8A04" />
-  </a>
-  <br><br>
-  <a href="https://ossinsight.io/analyze/Neonsy/NeonSpace#overview">
-    <img alt="OSS Insight" src="https://img.shields.io/badge/Insights-Analyze-0E7490?style=for-the-badge&logo=github&logoColor=fff&labelColor=0B1221" />
-  </a>&nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://app.codacy.com/gh/Neonsy/NeonSpace/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade">
-    <img alt="Codacy Grade" src="https://img.shields.io/codacy/grade/7e081aabb9f24e5ba5323d96d1c9e89c?style=for-the-badge&logo=codacy&logoColor=fff&label=Codacy&labelColor=0B1221" />
-  </a>&nbsp;&nbsp;&nbsp;&nbsp;
-  <br><br>
-  <a href="https://ko-fi.com/neonsy">
-    <img alt="Ko‑fi" src="https://img.shields.io/badge/Ko%E2%80%91fi-Support-DC2626?style=for-the-badge&logo=kofi&logoColor=fff&labelColor=0B1221" />
-  </a>
-</p>
+<div align="center">
+
+[![Issues](https://img.shields.io/github/issues/Neonsy/NeonSpace?style=for-the-badge&logo=github&logoColor=fff&labelColor=0B1221&color=471838)](https://github.com/Neonsy/NeonSpace/issues)
+&nbsp;&nbsp;&nbsp;&nbsp;
+[![Pull Requests](https://img.shields.io/github/issues-pr/Neonsy/NeonSpace?style=for-the-badge&logo=github&logoColor=fff&labelColor=0B1221&color=1E40AF&label=PRs)](https://github.com/Neonsy/NeonSpace/pulls)
+&nbsp;&nbsp;&nbsp;&nbsp;
+[![Forks](https://img.shields.io/github/forks/Neonsy/NeonSpace?style=for-the-badge&logo=github&logoColor=fff&labelColor=0B1221&color=3D66B8)](https://github.com/Neonsy/NeonSpace/network/members)
+&nbsp;&nbsp;&nbsp;&nbsp;
+[![Stars](https://img.shields.io/github/stars/Neonsy/NeonSpace?style=for-the-badge&logo=github&logoColor=fff&labelColor=0B1221&color=CA8A04)](https://github.com/Neonsy/NeonSpace/stargazers)
+
+[![OSS Insight](https://img.shields.io/badge/Insights-Analyze-0E7490?style=for-the-badge&logo=github&logoColor=fff&labelColor=0B1221)](https://ossinsight.io/analyze/Neonsy/NeonSpace#overview)
+&nbsp;&nbsp;&nbsp;&nbsp;
+[![Codacy Grade](https://img.shields.io/codacy/grade/7e081aabb9f24e5ba5323d96d1c9e89c?style=for-the-badge&logo=codacy&logoColor=fff&label=Codacy&labelColor=0B1221)](https://app.codacy.com/gh/Neonsy/NeonSpace/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+
+[![Ko‑fi](https://img.shields.io/badge/Ko%E2%80%91fi-Support-DC2626?style=for-the-badge&logo=kofi&logoColor=fff&labelColor=0B1221)](https://ko-fi.com/neonsy)
+
+</div>
+<!-- Note to self, don't use HTML as it's causing weird blue artifacts -->
 
 This is my corner of the web, a personal space to collect work, write openly, and connect ideas across design and engineering.
 
