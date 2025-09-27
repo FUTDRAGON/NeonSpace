@@ -9,12 +9,17 @@ concurrency:
 jobs:
     branch_policy:
         runs-on: ubuntu-latest
+        permissions:
+            pull-requests: write
         steps:
             - name: Enforce PR source/target
               shell: bash
               env:
                   BASE_REF: ${{ github.base_ref }}
                   HEAD_REF: ${{ github.head_ref }}
+                  GH_TOKEN: ${{ github.token }}
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+                  GH_REPO: ${{ github.repository }}
               run: |
                   set -euo pipefail
 
@@ -28,11 +33,53 @@ jobs:
 
                   if [[ "$base" == 'preview' && "$head" != 'dev' ]]; then
                     echo 'Only dev -> preview is allowed'
+
+                    # Close PR with explanatory comment
+                    gh pr close "$PR_NUMBER" --repo "$GH_REPO" --comment "🚫 **Branch Policy Violation**
+
+                  This pull request has been automatically closed because it violates NeonSpace's branch gate strategy.
+
+                  **Current PR:** \`$head\` → \`$base\`
+                  **Policy:** Only \`dev\` branch can open pull requests to \`preview\`
+
+                  ## NeonSpace Branch Strategy
+                  - **dev → preview** ✅ (Development to Staging)
+                  - **preview → main** ✅ (Staging to Production)
+                  - **Any other combination** ❌
+
+                  ## Next Steps
+                  1. Merge your changes into the \`dev\` branch first
+                  2. Create a new PR from \`dev\` to \`preview\`
+                  3. Follow the standard development flow: dev → preview → main
+
+                  For more details, see our [Contributing Guide](https://github.com/Neonsy/NeonSpace?tab=contributing-ov-file#readme)."
+
                     exit 1
                   fi
 
                   if [[ "$base" == 'main' && "$head" != 'preview' ]]; then
                     echo 'Only preview -> main is allowed'
+
+                    # Close PR with explanatory comment
+                    gh pr close "$PR_NUMBER" --repo "$GH_REPO" --comment "🚫 **Branch Policy Violation**
+
+                  This pull request has been automatically closed because it violates NeonSpace's branch gate strategy.
+
+                  **Current PR:** \`$head\` → \`$base\`
+                  **Policy:** Only \`preview\` branch can open pull requests to \`main\`
+
+                  ## NeonSpace Branch Strategy
+                  - **dev → preview** ✅ (Development to Staging)
+                  - **preview → main** ✅ (Staging to Production)
+                  - **Any other combination** ❌
+
+                  ## Next Steps
+                  1. Ensure your changes are in the \`preview\` branch first
+                  2. Create a new PR from \`preview\` to \`main\`
+                  3. Follow the standard development flow: dev → preview → main
+
+                  For more details, see our [Contributing Guide](https://github.com/Neonsy/NeonSpace?tab=contributing-ov-file#readme)."
+
                     exit 1
                   fi
 
@@ -40,10 +87,10 @@ jobs:
 
     ci:
         needs: branch_policy
-        if: contains(fromJSON('["preview","main"]'), github.base_ref)
+        if: contains(fromJSON('["preview","main","dev"]'), github.base_ref)
         runs-on: ubuntu-latest
         permissions:
-            contents: read
+            contents: write
             pull-requests: write
         defaults:
             run:
@@ -52,7 +99,14 @@ jobs:
             - name: Checkout PR head
               uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
               with:
+                  token: ${{ secrets.CHECKOUT_PAT }}
                   fetch-depth: 0
+                  ref: ${{ github.head_ref }}
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
+              with:
+                  package_json_file: Project/package.json
 
             - name: Setup Node
               uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
@@ -60,9 +114,6 @@ jobs:
                   node-version-file: Project/.node-version
                   cache: pnpm
                   cache-dependency-path: Project/pnpm-lock.yaml
-
-            - name: Setup pnpm
-              uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
 
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
@@ -73,24 +124,27 @@ jobs:
               run: pnpm tsc:check
 
             # TypeScript Status Labels
-            - if: steps.ts_check.conclusion == 'failure' && github.event.pull_request.number
+            - if: steps.ts_check.outcome == 'failure' && github.event.pull_request.number
               env:
                   GH_TOKEN: ${{ github.token }}
+                  GH_REPO: ${{ github.repository }}
                   PR_NUMBER: ${{ github.event.pull_request.number }}
               run: |
-                  gh pr edit "$PR_NUMBER" --remove-label "Types Stable"
-                  gh pr edit "$PR_NUMBER" --add-label "Type System Offline"
+                  gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --remove-label "Types Stable"
+                  gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --add-label "Type System Offline"
+                  exit 1
 
-            - if: steps.ts_check.conclusion == 'failure'
+            - if: steps.ts_check.outcome == 'failure'
               run: exit 1
 
-            - if: steps.ts_check.conclusion == 'success' && github.event.pull_request.number
+            - if: github.event.pull_request.number
               env:
                   GH_TOKEN: ${{ github.token }}
+                  GH_REPO: ${{ github.repository }}
                   PR_NUMBER: ${{ github.event.pull_request.number }}
               run: |
-                  gh pr edit "$PR_NUMBER" --remove-label "Type System Offline"
-                  gh pr edit "$PR_NUMBER" --add-label "Types Stable"
+                  gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --remove-label "Type System Offline"
+                  gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --add-label "Types Stable"
 
             # Lint Check
             - id: lint_check
@@ -98,13 +152,17 @@ jobs:
               continue-on-error: true
               run: pnpm biome:lint:check
 
-            - if: steps.lint_check.conclusion == 'failure' && github.event.pull_request.number
+            - if: steps.lint_check.outcome == 'failure' && github.event.pull_request.number
               env:
                   GH_TOKEN: ${{ github.token }}
+                  GH_REPO: ${{ github.repository }}
                   PR_NUMBER: ${{ github.event.pull_request.number }}
-              run: gh pr edit "$PR_NUMBER" --add-label "Diagnostics Failing"
+              run: |
+                  gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --remove-label "Lint Stable"
+                  gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --add-label "Diagnostics Failing"
+                  exit 1
 
-            - if: steps.lint_check.conclusion == 'failure'
+            - if: steps.lint_check.outcome == 'failure'
               run: exit 1
 
             # Format Check
@@ -113,27 +171,61 @@ jobs:
               continue-on-error: true
               run: pnpm biome:format:check
 
-            - if: steps.format_check.conclusion == 'failure' && github.event.pull_request.number
+            - if: (steps.format_check.outcome == 'failure' || steps.format_check.outcome == 'error') && github.event.pull_request.number
               env:
                   GH_TOKEN: ${{ github.token }}
-                  PR_NUMBER: ${{ github.event.pull_request.number }}
-              run: gh pr edit "$PR_NUMBER" --add-label "Formatting Drift"
-
-            # Auto-fix (if TypeScript passed)
-            - if: steps.ts_check.conclusion == 'success'
-              name: Biome lint & format (write)
-              run: pnpm biome:lint && pnpm biome:format
-
-            # Update Labels After Auto-fix
-            - if: steps.ts_check.conclusion == 'success' && github.event.pull_request.number
-              env:
-                  GH_TOKEN: ${{ github.token }}
+                  GH_REPO: ${{ github.repository }}
                   PR_NUMBER: ${{ github.event.pull_request.number }}
               run: |
-                  gh pr edit "$PR_NUMBER" --remove-label "Diagnostics Failing"
-                  gh pr edit "$PR_NUMBER" --remove-label "Formatting Drift"
-                  gh pr edit "$PR_NUMBER" --add-label "Lint Stable"
-                  gh pr edit "$PR_NUMBER" --add-label "Formatting Synchronized"
+                  gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --remove-label "Formatting Synchronized"
+                  gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --add-label "Formatting Drift"
+
+            # Auto-fix (TypeScript passed, so safe to auto-fix)
+            - name: Biome lint & format (write)
+              run: pnpm biome:lint && pnpm biome:format
+
+            # Commit and push auto-fix changes
+            - name: Commit auto-fix changes (using PAT)
+              if: ${{ !github.event.pull_request.head.repo.fork }}
+              env:
+                  REPO: ${{ github.repository }}
+                  PAT: ${{ secrets.CHECKOUT_PAT }}
+                  HEAD_REF: ${{ github.head_ref }}
+              run: |
+                  git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git config --local user.name "github-actions[bot]"
+                  git remote set-url origin "https://x-access-token:${PAT}@github.com/${REPO}.git"
+                  git fetch origin "${HEAD_REF}"
+                  git checkout "${HEAD_REF}"
+                  git add .
+                  if ! git diff --cached --quiet; then
+                    git commit -m "chore: Auto-fix lint and format issues"
+                    git push origin "HEAD:${HEAD_REF}"
+                  fi
+
+            # Check if auto-fix was applied
+            - id: autofix_check
+              name: Check if auto-fix was applied
+              run: |
+                  if git diff --quiet HEAD~1 HEAD; then
+                    echo "autofix_applied=false" >> $GITHUB_OUTPUT
+                    echo "No auto-fix changes detected"
+                  else
+                    echo "autofix_applied=true" >> $GITHUB_OUTPUT
+                    echo "Auto-fix changes were committed"
+                  fi
+
+            # Update Labels After Auto-fix
+            - if: github.event.pull_request.number
+              env:
+                  GH_TOKEN: ${{ github.token }}
+                  GH_REPO: ${{ github.repository }}
+                  PR_NUMBER: ${{ github.event.pull_request.number }}
+              run: |
+                  gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --remove-label "Diagnostics Failing"
+                  gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --remove-label "Formatting Drift"
+                  gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --add-label "Lint Stable"
+                  gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --add-label "Formatting Synchronized"
 
             # Build
             - id: build_step
@@ -145,8 +237,11 @@ jobs:
             - if: steps.build_step.conclusion == 'failure' && github.event.pull_request.number
               env:
                   GH_TOKEN: ${{ github.token }}
+                  GH_REPO: ${{ github.repository }}
                   PR_NUMBER: ${{ github.event.pull_request.number }}
-              run: gh pr edit "$PR_NUMBER" --add-label "Assembly Malfunction"
+              run: |
+                  gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --remove-label "Assembly Complete"
+                  gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --add-label "Assembly Malfunction"
 
             - if: steps.build_step.conclusion == 'failure'
               run: exit 1
@@ -154,19 +249,8 @@ jobs:
             - if: steps.build_step.conclusion == 'success' && github.event.pull_request.number
               env:
                   GH_TOKEN: ${{ github.token }}
+                  GH_REPO: ${{ github.repository }}
                   PR_NUMBER: ${{ github.event.pull_request.number }}
               run: |
-                  gh pr edit "$PR_NUMBER" --remove-label "Assembly Malfunction"
-                  gh pr edit "$PR_NUMBER" --add-label "Assembly Complete"
-
-            # Archive source for deploy (no Vercel build here - no secrets in PR context)
-            - name: Archive project source
-              shell: bash
-              working-directory: .
-              run: tar -czf pr-source.tgz Project
-
-            - name: Upload source artifact
-              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-              with:
-                  name: pr-source
-                  path: pr-source.tgz
+                  gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --remove-label "Assembly Malfunction"
+                  gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --add-label "Assembly Complete"

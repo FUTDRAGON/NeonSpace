@@ -38,6 +38,14 @@ jobs:
         steps:
             - name: Checkout
               uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5
+              with:
+                  fetch-depth: 0
+                  ref: ${{ github.head_ref }}
+
+            - name: Setup pnpm
+              uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
+              with:
+                  package_json_file: Project/package.json
 
             - name: Setup Node
               uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
@@ -45,9 +53,6 @@ jobs:
                   node-version-file: Project/.node-version
                   cache: pnpm
                   cache-dependency-path: Project/pnpm-lock.yaml
-
-            - name: Setup pnpm
-              uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
 
             - name: Install dependencies
               run: pnpm install --frozen-lockfile

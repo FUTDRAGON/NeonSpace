@@ -8,10 +8,10 @@
         "build": "next build --turbopack",
         "start": "next start",
         "biome:lint": "biome lint --write",
-        "biome:format": "biome format --write",
+        "biome:format": "biome check --write --formatter-enabled=true --linter-enabled=false",
         "tsc:check": "tsc -p tsconfig.json --noEmit",
         "biome:lint:check": "biome lint",
-        "biome:format:check": "biome format --check"
+        "biome:format:check": "biome check --formatter-enabled=true --linter-enabled=false"
     },
     "dependencies": {
         "@radix-ui/react-slot": "^1.2.3",
