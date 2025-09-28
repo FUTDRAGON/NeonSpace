@@ -31,7 +31,7 @@ jobs:
         needs: check_pr
         if: needs.check_pr.outputs.is_merged_pr == 'true'
         runs-on: ubuntu-latest
-        environment: deploy
+        environment: Vercel
         defaults:
             run:
                 working-directory: Project

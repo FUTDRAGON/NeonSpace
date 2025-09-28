@@ -32,7 +32,6 @@ description: 'Apply to imports, file layout, and code readability.'
 -   Avoid scattered, repetitive operations - consolidate when possible
 -   Structure code with logical flow that's easy to scan and understand
 
-## State Management (Zustand)
+## State Management
 
--   Stores live under src/store/STORENAME/index.ts
--   Organize per-store slices as separate files in the same directory (src/store/STORENAME/\*.ts), imported and combined in index.ts
+-   See "Zustand Stores" rules for store structure, slices, and middleware.

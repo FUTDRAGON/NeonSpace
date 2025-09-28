@@ -13,10 +13,11 @@ description: 'Apply to command execution, tooling, and repository stats.'
 ## Safety
 
 -   Do not run git commands without explicit permission
+-   Exception: read-only git status/diff allowed when crafting commit messages (see Commit Messages rules).
 
-## Repo Analytics
+## Analytics
 
--   Repository stats for https://github.com/Neonsy/NeonSpace: repobeats, https://ossinsight.io (default: https://ossinsight.io/analyze/<owner>/<repo>#overview), https://star-history.com
+-   See "Documentation & Analytics (NeonSpace)" rules for analytics widgets and links.
 
 ## Context & Retrieval
 

@@ -14,7 +14,7 @@
 
 [![OSS Insight](https://img.shields.io/badge/Insights-Analyze-0E7490?style=for-the-badge&logo=github&logoColor=fff&labelColor=0B1221)](https://ossinsight.io/analyze/Neonsy/NeonSpace#overview)
 &nbsp;&nbsp;&nbsp;&nbsp;
-[![Codacy Grade](https://img.shields.io/codacy/grade/7e081aabb9f24e5ba5323d96d1c9e89c?style=for-the-badge&logo=codacy&logoColor=fff&label=Codacy&labelColor=0B1221)](https://app.codacy.com/gh/Neonsy/NeonSpace/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Codacy Badge](https://img.shields.io/codacy/grade/9f14ecab0aa4479e93c20ba846f4396a?style=for-the-badge&logo=codacy&logoColor=fff&label=Codacy&labelColor=0B1221)](https://app.codacy.com/gh/Neonsy/NeonSpace/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 [![Ko‑fi](https://img.shields.io/badge/Ko%E2%80%91fi-Support-DC2626?style=for-the-badge&logo=kofi&logoColor=fff&labelColor=0B1221)](https://ko-fi.com/neonsy)
 
