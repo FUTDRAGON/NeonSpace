@@ -85,6 +85,8 @@ Even for hobby projects, follow your interests, which are tied to your passions.
 > [!IMPORTANT]
 > This project is currently under active development (if time permits).
 
+The [`dev` branch](https://github.com/Neonsy/NeonSpace/tree/dev) hosts the latest changes expected to reach production.
+
 ## Analytics
 
 ![Repo stats](https://repobeats.axiom.co/api/embed/a5589249b1cf6d8d90768eb6b4dbd45d904c6a45.svg 'Repobeats analytics image')

@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
 import { Roboto, Roboto_Mono } from 'next/font/google';
+import type { ReactNode } from 'react';
 
 import { metadata } from '@/metadata/global';
 import '@/styles/globals.css';

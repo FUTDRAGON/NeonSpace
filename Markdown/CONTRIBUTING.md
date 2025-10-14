@@ -45,10 +45,10 @@ This ensures progressive stability validation as code moves through the developm
 
 | Label Title             | When to use it                                                               |
 | ----------------------- | ---------------------------------------------------------------------------- |
-| Formatting Drift        | When Biome reports formatting differences during `pnpm run lint` or in CI.   |
-| Formatting Synchronized | When CI auto-formats files with Biome and pushes/notes the change.           |
-| Diagnostics Failing     | When Biome lint jobs fail in CI.                                             |
-| Lint Stable             | When all Biome lint checks pass in CI.                                       |
+| Formatting Drift        | Prettier format check failed or formatting drift detected.                   |
+| Formatting Synchronized | Code auto-formatted by CI with Prettier and formatting is in sync.           |
+| Diagnostics Failing     | ESLint diagnostics are failing.                                              |
+| Lint Stable             | All ESLint checks passed in CI.                                              |
 | Types Stable            | When the TypeScript type-check job passes in CI.                             |
 | Type System Offline     | When the TypeScript type-check job fails in CI.                              |
 | Simulation Failure      | When any test job fails in CI.                                               |

@@ -146,12 +146,13 @@ jobs:
                   gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --remove-label "Type System Offline"
                   gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --add-label "Types Stable"
 
-            # Lint Check
+            # ESLint Check
             - id: lint_check
-              name: Biome lint check
+              name: ESLint check
               continue-on-error: true
-              run: pnpm biome:lint:check
+              run: pnpm lint:check
 
+            # ESLint Status Labels
             - if: steps.lint_check.outcome == 'failure' && github.event.pull_request.number
               env:
                   GH_TOKEN: ${{ github.token }}
@@ -165,12 +166,13 @@ jobs:
             - if: steps.lint_check.outcome == 'failure'
               run: exit 1
 
-            # Format Check
+            # Prettier Check
             - id: format_check
-              name: Biome format check
+              name: Prettier format check
               continue-on-error: true
-              run: pnpm biome:format:check
+              run: pnpm format:check
 
+            # Prettier Status Labels
             - if: (steps.format_check.outcome == 'failure' || steps.format_check.outcome == 'error') && github.event.pull_request.number
               env:
                   GH_TOKEN: ${{ github.token }}
@@ -180,9 +182,9 @@ jobs:
                   gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --remove-label "Formatting Synchronized"
                   gh pr edit "$PR_NUMBER" --repo "$GH_REPO" --add-label "Formatting Drift"
 
-            # Auto-fix (TypeScript passed, so safe to auto-fix)
-            - name: Biome lint & format (write)
-              run: pnpm biome:lint && pnpm biome:format
+            # Auto-fix (TypeScript passed, so safe to run ESLint and Prettier fixes)
+            - name: ESLint and Prettier auto-fix (write)
+              run: pnpm lint:fix && pnpm format
 
             # Commit and push auto-fix changes
             - name: Commit auto-fix changes (using PAT)
